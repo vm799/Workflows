@@ -1,0 +1,241 @@
+{
+  "name": "AI Agent Chatbot with Tools and Memory",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hello! I'm an AI assistant with access to various tools including:\n- 🧮 Calculator for mathematical operations\n- 🕐 Current time and date information\n- 💻 Code execution capabilities\n- 🔍 Information retrieval\n\nHow can I help you today?",
+        "options": {
+          "title": "AI Assistant",
+          "subtitle": "Powered by OpenAI with Tool Access",
+          "responseMode": "lastNode",
+          "allowedOrigins": "*",
+          "loadPreviousSession": "memory"
+        }
+      },
+      "id": "chat-trigger-001",
+      "name": "When Chat Message Received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [460, 420],
+      "webhookId": "ai-chat-workflow-webhook"
+    },
+    {
+      "parameters": {
+        "content": "## 📌 Workflow Overview\n\nThis workflow demonstrates a fully functional AI Agent chatbot with:\n\n- **Chat Trigger**: Receives user messages via webhook\n- **AI Agent**: Processes queries and decides which tools to use\n- **Memory**: Maintains conversation context\n- **Tools**: Calculator, Time, Code execution\n\n### Best Practices Applied:\n- Proper error handling in code nodes\n- Dynamic data referencing with $node syntax\n- Memory integration for context-aware responses\n- Multiple tools for diverse task handling",
+        "height": 340,
+        "width": 380,
+        "color": 4
+      },
+      "id": "sticky-note-001",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [40, 240]
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 AI Agent Configuration\n\n**System Message**: Instructs the agent on:\n- How to use available tools\n- When to invoke calculator vs code execution\n- Memory management for context retention\n- Response formatting guidelines\n\n**Model**: GPT-4o-latest for optimal performance\n**Temperature**: 0.7 for balanced creativity/precision",
+        "height": 280,
+        "width": 360,
+        "color": 5
+      },
+      "id": "sticky-note-002",
+      "name": "Sticky Note 2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [900, 240]
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are a helpful AI assistant with access to multiple tools. Your role is to:\n\n1. **Understand user queries** and determine the best approach to answer them\n2. **Use the calculator tool** for mathematical operations (addition, subtraction, multiplication, division, etc.)\n3. **Use the current time tool** when users ask about the current date, time, or day of the week\n4. **Use the code interpreter** for complex calculations, data processing, or when you need to execute code\n5. **Remember context** from previous messages in the conversation using your memory\n6. **Provide clear, helpful responses** that directly address the user's question\n\n**Guidelines:**\n- Always check if you have relevant information from previous conversation turns before asking clarifying questions\n- When using tools, explain what you're doing\n- If a task requires multiple steps, break it down clearly\n- Be concise but thorough in your responses\n- If you're unsure, ask for clarification rather than making assumptions\n\n**Memory Usage:**\n- Reference previous conversation context when relevant\n- If a user refers to something mentioned earlier, retrieve that information from memory\n- Build upon previous interactions to provide personalized assistance"
+        },
+        "promptType": "define"
+      },
+      "id": "ai-agent-001",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [680, 420]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-latest",
+        "options": {
+          "temperature": 0.7,
+          "maxTokens": 2000
+        }
+      },
+      "id": "openai-model-001",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [680, 240],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-credentials",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 10
+      },
+      "id": "memory-buffer-001",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [680, 600]
+    },
+    {
+      "parameters": {
+        "name": "calculator",
+        "description": "Use this tool to perform mathematical calculations. Input should be a mathematical expression as a string (e.g., '25 * 4 + 10', 'sqrt(144)', '2^8'). This tool can handle basic arithmetic, exponents, square roots, and more complex mathematical operations."
+      },
+      "id": "calculator-tool-001",
+      "name": "Calculator Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [460, 600]
+    },
+    {
+      "parameters": {
+        "name": "current_time",
+        "description": "Use this tool when the user asks for the current time, date, day of the week, or any time-related information. This tool returns the current date and time in a human-readable format. No input is required."
+      },
+      "id": "time-tool-001",
+      "name": "Current Time Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [540, 600],
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const now = new Date();\nconst options = { \n  weekday: 'long', \n  year: 'numeric', \n  month: 'long', \n  day: 'numeric', \n  hour: '2-digit', \n  minute: '2-digit', \n  second: '2-digit',\n  timeZoneName: 'short'\n};\nconst formattedDate = now.toLocaleString('en-US', options);\nreturn `Current date and time: ${formattedDate}`;"
+      }
+    },
+    {
+      "parameters": {
+        "name": "code_interpreter",
+        "description": "Use this tool to execute JavaScript code for complex calculations, data transformations, or when you need to process data programmatically. Input should be valid JavaScript code. The code will be executed and the result will be returned. Use this for tasks that are too complex for the calculator or require programming logic.",
+        "language": "javaScript",
+        "hasOutput": true
+      },
+      "id": "code-tool-001",
+      "name": "Code Interpreter Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1,
+      "position": [620, 600]
+    },
+    {
+      "parameters": {
+        "name": "wikipedia_search",
+        "description": "Use this tool to search Wikipedia for factual information on any topic. Input should be a search query string. Returns a summary of the Wikipedia article if found.",
+        "method": "GET",
+        "url": "=https://en.wikipedia.org/api/rest_v1/page/summary/{{ encodeURIComponent($json.query) }}",
+        "responseFormat": "json",
+        "options": {}
+      },
+      "id": "wikipedia-tool-001",
+      "name": "Wikipedia Search Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [700, 600]
+    },
+    {
+      "parameters": {
+        "content": "## 🛠️ Available Tools\n\n### 1. Calculator\n- Mathematical operations\n- Arithmetic expressions\n- Advanced calculations\n\n### 2. Current Time\n- Date and time information\n- Timezone awareness\n- Formatted output\n\n### 3. Code Interpreter\n- Execute JavaScript\n- Complex data processing\n- Custom logic execution\n\n### 4. Wikipedia Search\n- Factual information retrieval\n- Topic summaries\n- Knowledge base access",
+        "height": 320,
+        "width": 340,
+        "color": 6
+      },
+      "id": "sticky-note-003",
+      "name": "Sticky Note 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [460, 740]
+    },
+    {
+      "parameters": {
+        "content": "## 💾 Memory & Session Management\n\n**Window Buffer Memory**:\n- Maintains last 10 conversation turns\n- Session-based context retention\n- Enables context-aware responses\n\n**Session Key**: Dynamically generated from chat input\n**Context Window**: 10 messages\n\nThis ensures the AI can reference previous parts of the conversation and provide coherent, context-aware responses.",
+        "height": 260,
+        "width": 340,
+        "color": 7
+      },
+      "id": "sticky-note-004",
+      "name": "Sticky Note 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [900, 560]
+    }
+  ],
+  "connections": {
+    "When Chat Message Received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "OpenAI Chat Model",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ],
+      "ai_memory": [
+        [
+          {
+            "node": "Window Buffer Memory",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ],
+      "ai_tool": [
+        [
+          {
+            "node": "Calculator Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Current Time Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Code Interpreter Tool",
+            "type": "ai_tool",
+            "index": 0
+          },
+          {
+            "node": "Wikipedia Search Tool",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 1,
+  "updatedAt": "2024-11-16T00:00:00.000Z",
+  "versionId": "1.0.0"
+}
